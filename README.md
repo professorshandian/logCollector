@@ -1,2 +1,3 @@
 # logCollector
 collect binary log data
+主要针对二进制日志的数据采集，将采集的数据以protobuf格式发送至kafka，相关配置填写在config.json中
