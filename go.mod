@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/chaolihf/udpgo v0.0.13
 	github.com/go-kit/log v0.2.1
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
