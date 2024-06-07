@@ -26,6 +26,7 @@ type Collector struct {
 	tableDataMap      map[string]int32
 	tableName         string
 	columnDataCollect []string
+	assetsMap         map[string]string
 }
 
 /*
@@ -45,6 +46,12 @@ func newNetCollector() (*Collector, error) {
 			messageMap := make(map[string]string)
 			tableDataMap := make(map[string]int32)
 			columnOrderMap := make(map[string]string)
+			assetsMap := make(map[string]string)
+			assetsKeys := jsonConfigInfos.GetJsonObject("assetsMap")
+			assetsKeysInfo := assetsKeys.GetKeys()
+			for i := range assetsKeysInfo {
+				assetsMap[assetsKeysInfo[i]] = assetsKeys.GetString(assetsKeysInfo[i])
+			}
 			columnOrderKeys := jsonConfigInfos.GetJsonObject("columnOrder")
 			columnOrderKeysInfo := columnOrderKeys.GetKeys()
 			for i := range columnOrderKeysInfo {
@@ -76,6 +83,7 @@ func newNetCollector() (*Collector, error) {
 				tableDataMap:      tableDataMap,
 				tableName:         jsonConfigInfos.GetString("tableName"),
 				columnDataCollect: tableDataKeysInfo,
+				assetsMap:         assetsMap,
 			}, nil
 		}
 	}
@@ -91,6 +99,7 @@ func newNetCollector() (*Collector, error) {
 		tableDataMap:      nil,
 		tableName:         "",
 		columnDataCollect: nil,
+		assetsMap:         nil,
 	}, nil
 }
 

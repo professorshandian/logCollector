@@ -13,6 +13,7 @@ import (
 func main() {
 	collector, _ := newNetCollector()
 	kafkaTopic := collector.kafkaTopic
+	assetsMap := collector.assetsMap
 	// 监听2055端口的UDP协议
 	addr := &net.UDPAddr{
 		Port: collector.listenUdpPort,
@@ -32,6 +33,7 @@ func main() {
 	for {
 		// 创建一个足够大的缓冲区来接收数据
 		buffer := make([]byte, 1024)
+		//获取到发送方的源IP
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
 		buffer = buffer[:n]
 		if err != nil {
@@ -49,6 +51,13 @@ func main() {
 				if location == 0 {
 					kafkaHeadKeyValues[key] = parseRule(dataType, start, end, buffer)
 				}
+			}
+			//添加发送方的源地址
+			kafkaHeadKeyValues["remote_addr"] = remoteAddr.String()
+			if _, ok := assetsMap[remoteAddr.IP.String()]; ok {
+				kafkaHeadKeyValues["object_id"] = assetsMap[remoteAddr.IP.String()]
+			} else {
+				kafkaHeadKeyValues["object_id"] = ""
 			}
 			buffer = buffer[collector.headLength:]
 			for i := 0; i < len(buffer); i += collector.messageLength {
