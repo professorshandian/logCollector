@@ -4,14 +4,20 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	kafka "github.com/chaolihf/udpgo/kafka"
 	"google.golang.org/protobuf/proto"
 )
 
+var collector *Collector
+
+func init() {
+	collector, _ = newNetCollector()
+}
+
 func main() {
-	collector, _ := newNetCollector()
 	kafkaTopic := collector.kafkaTopic
 	assetsMap := collector.assetsMap
 	// 监听2055端口的UDP协议
@@ -21,14 +27,15 @@ func main() {
 	}
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		logger.Log("Error listening on port %d: %s\n", collector.listenUdpPort, err)
+		logger.Error(fmt.Sprintf("Error listening on port %d: %s\n", collector.listenUdpPort, err))
 		os.Exit(1)
 	}
 	defer conn.Close()
 
-	fmt.Printf("Listening on UDP port %d...\n", collector.listenUdpPort)
+	logger.Info(fmt.Sprintf("Listening on UDP port %d...\n", collector.listenUdpPort))
 
-	p := kafka.InitKafka([]string{collector.kafkaInfo})
+	//p := kafka.InitKafka([]string{collector.kafkaInfo})
+	p := kafka.InitKafka(strings.Split(collector.kafkaInfo, ";"))
 	//循环接收数据
 	for {
 		// 创建一个足够大的缓冲区来接收数据
@@ -37,10 +44,10 @@ func main() {
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
 		buffer = buffer[:n]
 		if err != nil {
-			logger.Log("Error reading from UDP: %s\n", err)
+			logger.Error(fmt.Sprintf("Error reading from UDP: %s\n", err))
 			continue
 		}
-		fmt.Printf("Received %d bytes from %s: %x\n", n, remoteAddr, buffer[:n])
+		logger.Info(fmt.Sprintf("Received %d bytes from %s: %x\n", n, remoteAddr, buffer[:n]))
 		messageMap := collector.messageMap
 		if messageMap == nil {
 			fmt.Printf("解析规则未配置")
@@ -82,7 +89,7 @@ func main() {
 				loggerDatas.TableData = append(loggerDatas.TableData, tableData)
 				protoBytes, err := proto.Marshal(loggerDatas)
 				if err != nil {
-					logger.Log("Error marshaling PROTO:", err)
+					logger.Error("Error marshaling PROTO:" + err.Error())
 				}
 				p.SendMesssage(protoBytes, kafkaTopic, "netflow-log")
 			}

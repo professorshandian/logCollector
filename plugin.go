@@ -9,10 +9,13 @@ import (
 	"strings"
 
 	jjson "github.com/chaolihf/udpgo/json"
-	"github.com/go-kit/log"
+	lang "github.com/chaolihf/udpgo/lang"
+	"go.uber.org/zap"
 )
 
-var logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+var logger *zap.Logger
+
+// var logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
 type Collector struct {
 	listenUdpPort     int
@@ -33,14 +36,18 @@ type Collector struct {
 读取连接信息配置文件
 */
 func newNetCollector() (*Collector, error) {
+	var logPath = "logs/nat.log"
+	var logSize = 1024
+	//初始化日志配置
+	logger = lang.InitProductLogger(logPath, logSize, 7, 10)
 	filePath := "config.json"
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		logger.Log("读取文件出错:"+filePath, err)
+		logger.Error(filePath + "读取文件出错:" + err.Error())
 	} else {
 		jsonConfigInfos, err := jjson.NewJsonObject([]byte(content))
 		if err != nil {
-			logger.Log("JSON文件格式出错:", err)
+			logger.Error("JSON文件格式出错:" + err.Error())
 			return nil, err
 		} else {
 			messageMap := make(map[string]string)
@@ -132,16 +139,16 @@ func stringSplit(value string) (int, int, string, int) {
 	valueParts := strings.Split(value, ":")
 	start, err := strconv.Atoi(valueParts[0])
 	if err != nil {
-		logger.Log("解析起始位未配置")
+		logger.Error("解析起始位未配置")
 	}
 	end, err := strconv.Atoi(valueParts[1])
 	if err != nil {
-		logger.Log("解析结束位未配置")
+		logger.Error("解析结束位未配置")
 	}
 	dataType := valueParts[2]
 	location, err := strconv.Atoi(valueParts[3])
 	if err != nil {
-		logger.Log("数据位未配置")
+		logger.Error("数据位未配置")
 	}
 	return start, end, dataType, location
 }
@@ -270,5 +277,5 @@ func addTableData(collector *Collector, kafkaMessageKeyValues map[string]interfa
 		}
 	}
 	tableData.Rows = append(tableData.Rows, tableOneRow)
-	fmt.Println(tableData)
+	logger.Info(fmt.Sprintln(tableData))
 }
